@@ -10,6 +10,7 @@ section .data
 	prompt_msg:    db "calc: ", 0 ; printf format string follow by a newline(10) and a null terminator(0), "\n",'0'
 	over_flow_error: db "Error: Operand Stack Overflow", 10, 0;
 	arguments_error: db "Error: Insufficient Number of Arguments on Stack", 10, 0;
+	num_fmt: db "%d", 10, 0;
 
 	operations: dd q, addition, pnp, d, bit_and, bit_or, n
 
@@ -57,8 +58,8 @@ insert:
     call printf
     ret
     exe_insert:
-	mov [op_stack_ptr], eax
 	sub op_stack_ptr, 4
+	mov [op_stack_ptr], eax
 	inc ecx
 	ret
 
@@ -72,11 +73,15 @@ addition:
     add esp, 4
     ret
     exe_addition:
-        pop eax
-        pop ebx
+	mov eax, [op_stack_ptr]
+	mov ebx, [op_stack_ptr+4]
+	add op_stack_ptr, 8
+	sub ecx, 2
         add eax, ebx
         push eax
 	call insert
+	add esp, 4
+	ret
 
 pnp:
     ; attemp to pop an operand from the stack, if available then print
@@ -87,13 +92,31 @@ pnp:
     add esp, 4
     ret
     exe_pnp:
-	mov eax
-	push 
-
+	mov eax, [op_stack_ptr]
+	add op_stack_ptr, 4
+	dec ecx
+	push eax
+	push dword [num_fmt]
+	call printf
+	add esp, 8
+	ret
 d:
     ; check if there is an argument to duplicate, if not error, else insert a copy
+    cmp ecx, 1
+    jge exe_dup
+    push dword [arguments_error]
+    call printf
+    add esp, 4
+    ret
+    exe_dup:
+	mov eax, [op_stack_ptr]
+	push eax
+	call insert
+	add esp, 4
+	ret
 
 bit_and:
+	
 
 
 bit_or:
