@@ -11,6 +11,7 @@ section .data
 	over_flow_error: db "Error: Operand Stack Overflow", 10, 0;
 	arguments_error: db "Error: Insufficient Number of Arguments on Stack", 10, 0;
 	num_fmt: db "%d", 10, 0;
+	str_fmt: db "%s", 10, 0;
 
 	operations: dd q, addition, pnp, d, bit_and, bit_or, n
 
@@ -26,23 +27,29 @@ section .text
 main:
 	push ebp
 	mov ebp, esp
-	mov ecx, [ebp+8]
+	mov eax, [ebp+8]
+	mov [op_stack_cap], eax
+	xor ecx, ecx
 	mov op_stack_ptr, esp
 	sub esp, eax
 
 	call prompt
 	call get_input
-
-
-
-
-	push dword stdin
-	push dword MAX_INPUT
+	push str_fmt;
 	push op_stack
-	call fgets
-	add esp, 12
+	call printf
+	add esp, 8
+	jmp q
+
+
 
 get_input:
+    push dword stdin
+    push dword MAX_INPUT
+    push op_stack
+    call fgets
+    add esp, 12
+
 
 prompt:
     push dword [prompt_msg]
@@ -122,6 +129,16 @@ bit_and:
 bit_or:
 
 n:
+    cmp ecx, 1
+        jge exe_n
+        push dword [arguments_error]
+        call printf
+        add esp, 4
+        ret
+    exe_n:
+        mov eax, [op_stack_ptr]
+
+
 
 q:
 	mov esp, ebp
