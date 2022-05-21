@@ -1,8 +1,13 @@
-all: calc
+all: clean calc
 
-calc: calc.o
-	gcc -m32 -Wall -g calc.o -o calc
+calc: obj/calc.o
+	gcc -m32 -Wall -g -no-pie obj/calc.o -o bin/calc
 
-calc.o: calc.s
-	nasm -f elf calc.s -o calc.o
+obj/calc.o: src/calc.s
+	nasm -f elf src/calc.s -o obj/calc.o
 
+clean:
+	rm -rf bin/* obj/*
+
+run:
+	./bin/calc

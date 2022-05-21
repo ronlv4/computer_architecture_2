@@ -7,7 +7,7 @@ section .bss
 	op_stack_cap: resd 1
 
 section .data
-	prompt_msg:    db "calc: ", 0 ; printf format string follow by a newline(10) and a null terminator(0), "\n",'0'
+	prompt_msg:    db "calc: ", 0;
 	over_flow_error: db "Error: Operand Stack Overflow", 10, 0;
 	arguments_error: db "Error: Insufficient Number of Arguments on Stack", 10, 0;
 	num_fmt: db "%d", 10, 0;
@@ -35,8 +35,15 @@ section .text
 	extern stdout
 	extern stdin
 	extern stderr
-  
+
 main:
+    pop dword ecx
+    mov esi, esp
+    push ecx
+    push num_fmt
+    call printf
+    cmp ecx, 2
+    jb q
 	push ebp
 	mov ebp, esp
 ;	mov eax, [ebp+8]
@@ -61,9 +68,10 @@ get_input:
     mov edx, MAX_INPUT
     int 0x80
     popad
+    ret
 
 prompt:
-    push dword [prompt_msg]
+    push dword prompt_msg
     call printf
     add esp, 4
     ret
@@ -177,9 +185,8 @@ n:
         mov eax, [esi]
 
 
-
 q:
 	mov esp, ebp
 	pop ebp
 	mov eax, 0
-	ret
+	nop
