@@ -13,7 +13,7 @@ section .data
 	num_fmt: db "%d", 10, 0;
 	str_fmt: db "%s", 10, 0;
 
-	operations: dd q, addition, pnp, d, bit_and, bit_or, n
+	operations: dd q, addition, pnp, dup, bit_and, bit_or, n
 
 section .rodata
     MAX_INPUT: dd 1024
@@ -40,8 +40,6 @@ main:
 	call printf
 	add esp, 8
 	jmp q
-
-
 
 get_input:
     push dword stdin
@@ -107,7 +105,8 @@ pnp:
 	call printf
 	add esp, 8
 	ret
-d:
+
+dup:
     ; check if there is an argument to duplicate, if not error, else insert a copy
     cmp ecx, 1
     jge exe_dup
@@ -123,10 +122,36 @@ d:
 	ret
 
 bit_and:
-	
-
+    cmp ecx, 2
+    jge exe_and
+    push dword [arguments_error]
+    call printf
+    add esp, 4
+    ret
+    exe_and:
+        mov eax, [op_stack_ptr]
+        mov ebx, [op_stack_ptr+4]
+        and eax, ebx
+        push eax
+        call insert
+        add esp, 4
+        ret
 
 bit_or:
+    cmp ecx, 2
+    jge exe_or
+    push dword [arguments_error]
+    call printf
+    add esp, 4
+    ret
+    exe_or:
+        mov eax, [op_stack_ptr]
+        mov ebx, [op_stack_ptr+4]
+        or eax, ebx
+        push eax
+        call insert
+        add esp, 4
+        ret
 
 n:
     cmp ecx, 1
