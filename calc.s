@@ -30,13 +30,13 @@ main:
 	mov eax, [ebp+8]
 	mov [op_stack_cap], eax
 	xor ecx, ecx
-	mov op_stack_ptr, esp
+	mov dword op_stack_ptr, esp
 	sub esp, eax
 
 	call prompt
 	call get_input
+	push input_buff
 	push str_fmt;
-	push op_stack
 	call printf
 	add esp, 8
 	jmp q
