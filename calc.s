@@ -22,16 +22,28 @@ section .rodata
 section .text
 	global main
 	extern fgets
-
-    
+	align 16
+	extern printf
+	extern fprintf 
+	extern fflush
+	extern malloc 
+	extern calloc 
+	extern free 
+	extern gets 
+	extern getchar 
+	extern fgets 
+	extern stdout
+	extern stdin
+	extern stderr
+  
 main:
 	push ebp
 	mov ebp, esp
-	mov eax, [ebp+8]
-	mov [op_stack_cap], eax
-	xor ecx, ecx
-	mov dword op_stack_ptr, esp
-	sub esp, eax
+;	mov eax, [ebp+8]
+;	mov [op_stack_cap], eax
+;	xor ecx, ecx
+;	mov esi, esp
+;	sub esp, eax
 
 	call prompt
 	call get_input
@@ -42,12 +54,13 @@ main:
 	jmp q
 
 get_input:
-    push dword stdin
-    push dword MAX_INPUT
-    push input_buff
-    call fgets
-    add esp, 12
-
+    pushad
+    mov eax, 3
+    mov ebx, 0
+    mov ecx, input_buff
+    mov edx, MAX_INPUT
+    int 0x80
+    popad
 
 prompt:
     push dword [prompt_msg]
@@ -63,8 +76,8 @@ insert:
     call printf
     ret
     exe_insert:
-	sub op_stack_ptr, 4
-	mov [op_stack_ptr], eax
+	sub esi, 4
+	mov [esi], eax
 	inc ecx
 	ret
 
@@ -78,9 +91,9 @@ addition:
     add esp, 4
     ret
     exe_addition:
-	mov eax, [op_stack_ptr]
-	mov ebx, [op_stack_ptr+4]
-	add op_stack_ptr, 8
+	mov eax, [esi]
+	mov ebx, [esi+4]
+	add esi, 8
 	sub ecx, 2
         add eax, ebx
         push eax
@@ -97,8 +110,8 @@ pnp:
     add esp, 4
     ret
     exe_pnp:
-	mov eax, [op_stack_ptr]
-	add op_stack_ptr, 4
+	mov eax, [esi]
+	add esi, 4
 	dec ecx
 	push eax
 	push dword [num_fmt]
@@ -115,7 +128,7 @@ dup:
     add esp, 4
     ret
     exe_dup:
-	mov eax, [op_stack_ptr]
+	mov eax, [esi]
 	push eax
 	call insert
 	add esp, 4
@@ -129,8 +142,8 @@ bit_and:
     add esp, 4
     ret
     exe_and:
-        mov eax, [op_stack_ptr]
-        mov ebx, [op_stack_ptr+4]
+        mov eax, [esi]
+        mov ebx, [esi+4]
         and eax, ebx
         push eax
         call insert
@@ -145,8 +158,8 @@ bit_or:
     add esp, 4
     ret
     exe_or:
-        mov eax, [op_stack_ptr]
-        mov ebx, [op_stack_ptr+4]
+        mov eax, [esi]
+        mov ebx, [esi+4]
         or eax, ebx
         push eax
         call insert
@@ -161,7 +174,7 @@ n:
         add esp, 4
         ret
     exe_n:
-        mov eax, [op_stack_ptr]
+        mov eax, [esi]
 
 
 
