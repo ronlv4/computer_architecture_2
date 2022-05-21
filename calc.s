@@ -2,7 +2,7 @@ extern printf
 extern c_checkValidity
 
 section .bss
-	;op_stack: resd 10
+	input_buff: resb 1024
 	op_stack_ptr: resd 1
 	op_stack_cap: resd 1
 
@@ -44,7 +44,7 @@ main:
 get_input:
     push dword stdin
     push dword MAX_INPUT
-    push op_stack
+    push input_buff
     call fgets
     add esp, 12
 
