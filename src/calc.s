@@ -41,17 +41,19 @@ section .text
 main:
     push ebp
     mov ebp, esp
+    xor ebx, ebx
     mov ebx, 5          ; default stack capacity
     mov eax, [ebp+8]    ; eax = argc
     cmp eax, 2
     jg arg_count_err
     jne default_capacity
-    mov ebx, [ebp+12]   ; ebx = **argv
-    add ebx, 4
-    mov ebx, [ebx]
-    sub ebx, '0'
-    push ebx
-    push str_fmt
+    mov esi, [ebp+12]   ; ebx = **argv
+    add esi, 4
+    mov esi, [esi]
+    mov ecx, 2
+    call string_to_int
+    push eax
+    push num_fmt
     call printf
 default_capacity:
     push dword [ebx]
@@ -70,6 +72,18 @@ default_capacity:
 	call printf
 	add esp, 8
 	jmp q
+
+string_to_int:
+  xor ebx,ebx    ; clear ebx
+.next_digit:
+  movzx eax,byte[esi]
+  inc esi
+  sub al,'0'    ; convert from ASCII to number
+  imul ebx,10
+  add ebx,eax   ; ebx = ebx*10 + eax
+  loop .next_digit  ; while (--ecx)
+  mov eax,ebx
+  ret
 
 get_input:
     pushad
