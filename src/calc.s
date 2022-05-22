@@ -41,18 +41,22 @@ section .text
 main:
     push ebp
     mov ebp, esp
-    mov eax, [ebp+8]
+    mov ebx, 5          ; default stack capacity
+    mov eax, [ebp+8]    ; eax = argc
     cmp eax, 2
-    jb arg_count_err
-    mov ebx, [ebp+12]
+    jg arg_count_err
+    jne default_capacity
+    mov ebx, [ebp+12]   ; ebx = **argv
     add ebx, 4
-    push dword [ebx]
+    mov ebx, [ebx]
+    sub ebx, '0'
+    push ebx
     push str_fmt
     call printf
-    cmp ecx, 2
-    jb q
-	push ebp
-	mov ebp, esp
+default_capacity:
+    push dword [ebx]
+    push num_fmt
+    call printf
 ;	mov eax, [ebp+8]
 ;	mov [op_stack_cap], eax
 ;	xor ecx, ecx
