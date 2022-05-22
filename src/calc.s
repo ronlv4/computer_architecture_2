@@ -10,8 +10,10 @@ section .data
 	prompt_msg:    db "calc: ", 0;
 	over_flow_error: db "Error: Operand Stack Overflow", 10, 0;
 	arguments_error: db "Error: Insufficient Number of Arguments on Stack", 10, 0;
+	arg_count_err_msg: db "Error: invalid number of arguments", 10, 0;
 	num_fmt: db "%d", 10, 0;
 	str_fmt: db "%s", 10, 0;
+	chr_fmt: db "%c", 10, 0;
 
 	operations: dd q, addition, pnp, dup, bit_and, bit_or, n
 
@@ -37,10 +39,15 @@ section .text
 	extern stderr
 
 main:
-    pop dword ecx
-    mov esi, esp
-    push ecx
-    push num_fmt
+    push ebp
+    mov ebp, esp
+    mov eax, [ebp+8]
+    cmp eax, 2
+    jb arg_count_err
+    mov ebx, [ebp+12]
+    add ebx, 4
+    push dword [ebx]
+    push str_fmt
     call printf
     cmp ecx, 2
     jb q
@@ -80,7 +87,7 @@ insert:
     pop eax
     cmp ecx, [op_stack_cap]
     jne exe_insert
-    push dword [over_flow_error]
+    push over_flow_error
     call printf
     ret
     exe_insert:
@@ -94,7 +101,7 @@ addition:
     ; attemp to pop 2 operands from stack and perform addition, then insert
     cmp ecx, 2
     jge exe_addition
-    push dword [arguments_error]
+    push arguments_error
     call printf
     add esp, 4
     ret
@@ -113,7 +120,7 @@ pnp:
     ; attemp to pop an operand from the stack, if available then print
     cmp ecx, 1
     jge exe_pnp
-    push dword [arguments_error]
+    push arguments_error
     call printf
     add esp, 4
     ret
@@ -131,7 +138,7 @@ dup:
     ; check if there is an argument to duplicate, if not error, else insert a copy
     cmp ecx, 1
     jge exe_dup
-    push dword [arguments_error]
+    push arguments_error
     call printf
     add esp, 4
     ret
@@ -145,7 +152,7 @@ dup:
 bit_and:
     cmp ecx, 2
     jge exe_and
-    push dword [arguments_error]
+    push arguments_error
     call printf
     add esp, 4
     ret
@@ -161,7 +168,7 @@ bit_and:
 bit_or:
     cmp ecx, 2
     jge exe_or
-    push dword [arguments_error]
+    push arguments_error
     call printf
     add esp, 4
     ret
@@ -177,13 +184,17 @@ bit_or:
 n:
     cmp ecx, 1
         jge exe_n
-        push dword [arguments_error]
+        push arguments_error
         call printf
         add esp, 4
         ret
     exe_n:
         mov eax, [esi]
 
+arg_count_err:
+    push arg_count_err_msg
+    call printf
+    add esp, 4
 
 q:
 	mov esp, ebp

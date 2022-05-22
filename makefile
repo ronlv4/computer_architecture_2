@@ -1,4 +1,4 @@
-all: clean calc
+all: clean calc run
 
 calc: obj/calc.o
 	gcc -m32 -Wall -g -no-pie obj/calc.o -o bin/calc
