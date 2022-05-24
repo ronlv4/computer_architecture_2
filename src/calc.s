@@ -2,20 +2,23 @@ extern printf
 extern c_checkValidity
 
 section .bss
-	input_buff: resb 1024
+	input_buffer: resb 1024
 	op_stack_ptr: resd 1
 	op_stack_cap: resd 1
 
 section .data
-	prompt_msg:    db "calc: ", 0;
-	over_flow_error: db "Error: Operand Stack Overflow", 10, 0;
-	arguments_error: db "Error: Insufficient Number of Arguments on Stack", 10, 0;
-	arg_count_err_msg: db "Error: invalid number of arguments", 10, 0;
+    set_cap_msg:        db "setting stack capacity to %d", 10, 0
+    debug_msg:          db "got here", 10, 0
+	prompt_msg:         db "calc: ", 0;
+	over_flow_error:    db "Error: Operand Stack Overflow", 10, 0;
+	arguments_error:    db "Error: Insufficient Number of Arguments on Stack", 10, 0;
+	arg_count_err_msg:  db "Error: invalid number of arguments", 10, 0;
+	invalid_number_msg: db "Error: the number entered is invalid", 10, 0
 	num_fmt: db "%d", 10, 0;
 	str_fmt: db "%s", 10, 0;
 	chr_fmt: db "%c", 10, 0;
 
-	operations: dd q, addition, pnp, dup, bit_and, bit_or, n
+	operations: db "q", "addition", "pnp", "dup", "bit_and", "bit_or", "n"
 
 section .rodata
     MAX_INPUT: dd 1024
@@ -43,114 +46,145 @@ main:
     mov ebp, esp
     xor ebx, ebx
     mov ebx, 5          ; default stack capacity
-    mov eax, [ebp+8]    ; eax = argc
+    mov eax, [ebp+8]        ; eax = argc
     cmp eax, 2
     jg arg_count_err
     jne default_capacity
-    mov esi, [ebp+12]   ; ebx = **argv
-    add esi, 4
-    mov esi, [esi]
-    mov ecx, 2
-    call string_to_int
-    push eax
-    push num_fmt
-    call printf
+    mov edi, [ebp+12]       ; edi = argv (char**)
+    add edi, 4              ; edi = argv + 1
+    mov edi, [edi]
+    call string_to_hexa     ; ebx = int value of (argv + 1)
+
 default_capacity:
-    push dword [ebx]
-    push num_fmt
+    mov dword [op_stack_cap], ebx
+    push dword [op_stack_cap]
+    push set_cap_msg
     call printf
-;	mov eax, [ebp+8]
-;	mov [op_stack_cap], eax
-;	xor ecx, ecx
-;	mov esi, esp
-;	sub esp, eax
-
+    add esp, 8
+    mov esi, esp
+    sub esp, ebx
+	xor ecx, ecx            ; ecx - current num of args in stack
+iteration:
 	call prompt
-	call get_input
-	push input_buff
-	push str_fmt;
-	call printf
-	add esp, 8
-	jmp q
+	call get_input          ; input_buff filled with user input
+	mov ebx, dword[input_buffer]
+	cmp bl, "+"
+	je addition
+	cmp bl, "p"
+	je pnp
+	cmp bl, "d"
+	je dup
+	cmp bl, "n"
+	je n
+	cmp bl, "&"
+	je bit_and
+	cmp bl, "|"
+	je bit_or
+	cmp bl, "q"
+	je q
+	mov edi, input_buffer
+	call string_to_hexa
+	call insert
+	jmp iteration
 
-string_to_int:
-  xor ebx,ebx    ; clear ebx
+string_to_hexa:
+    ; INPUT: edi - char* of the number
+    ; OUTPUT: eax - int value of edi string
+    xor eax,eax    ; clear ebx
 .next_digit:
-  movzx eax,byte[esi]
-  inc esi
-  sub al,'0'    ; convert from ASCII to number
-  imul ebx,10
-  add ebx,eax   ; ebx = ebx*10 + eax
-  loop .next_digit  ; while (--ecx)
-  mov eax,ebx
-  ret
+    movzx ebx, byte[edi]
+    inc edi
+    cmp bl , '0'
+    jb .invalid
+    cmp bl, 'F'
+    ja .invalid
+    cmp bl, '9'
+    jbe .valid_dec
+    cmp bl, 'A'
+    jae .valid_hex
+    jmp .invalid
+.valid_hex:
+    sub bl, 7
+.valid_dec:
+    sub bl, '0'
+    imul eax,16
+    add eax,ebx
+    cmp byte[edi], 0
+    jne .next_digit
+    ret
+.invalid:
+    push dword invalid_number_msg
+    push str_fmt
+    call printf
+    add esp, 8
+    jmp iteration
 
 get_input:
     pushad
     mov eax, 3
     mov ebx, 0
-    mov ecx, input_buff
+    mov ecx, input_buffer
     mov edx, MAX_INPUT
     int 0x80
+    dec eax
+    mov byte[input_buffer + eax], 0
     popad
     ret
 
 prompt:
-    push dword prompt_msg
-    call printf
-    add esp, 4
+    pushad
+    mov eax, 4
+    mov ebx, 1
+    mov ecx, prompt_msg
+    mov edx, 6
+    int 0x80
+    popad
     ret
 
 insert:
-    pop eax
+    ; input: eax = number to insert
     cmp ecx, [op_stack_cap]
-    jne exe_insert
+    jne .exe_insert
     push over_flow_error
     call printf
+    add esp, 4
     ret
-    exe_insert:
-	sub esi, 4
+.exe_insert:
 	mov [esi], eax
+	dec esi
 	inc ecx
 	ret
 
 
 addition:
-    ; attemp to pop 2 operands from stack and perform addition, then insert
     cmp ecx, 2
-    jge exe_addition
+    jge .exe_addition
     push arguments_error
     call printf
     add esp, 4
-    ret
-    exe_addition:
-	mov eax, [esi]
-	mov ebx, [esi+4]
+    jmp iteration
+.exe_addition:
+	mov eax, [esi+1]
+	mov ebx, [esi+2]
 	add esi, 8
 	sub ecx, 2
-        add eax, ebx
-        push eax
+    add eax, ebx
 	call insert
-	add esp, 4
-	ret
+	jmp iteration
 
 pnp:
     ; attemp to pop an operand from the stack, if available then print
     cmp ecx, 1
-    jge exe_pnp
+    jge .exe_pnp
     push arguments_error
     call printf
     add esp, 4
-    ret
-    exe_pnp:
-	mov eax, [esi]
-	add esi, 4
+    jmp iteration
+.exe_pnp:
+	mov eax, [esi+1]
+	inc esi
 	dec ecx
-	push eax
-	push dword [num_fmt]
-	call printf
-	add esp, 8
-	ret
+	jmp iteration
 
 dup:
     ; check if there is an argument to duplicate, if not error, else insert a copy
