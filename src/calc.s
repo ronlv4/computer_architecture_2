@@ -3,6 +3,7 @@ extern c_checkValidity
 
 section .bss
 	input_buffer: resb 1024
+	op_count: resd 1
 	op_stack_ptr: resd 1
 	op_stack_cap: resd 1
 
@@ -63,6 +64,7 @@ default_capacity:
     add esp, 8
     mov esi, esp
     sub esp, ebx
+    mov dword [op_count], 0
 	xor ecx, ecx            ; ecx - current num of args in stack
 iteration:
 	call prompt
@@ -143,21 +145,23 @@ prompt:
 
 insert:
     ; input: eax = number to insert
-    cmp ecx, [op_stack_cap]
+    mov ecx, [op_stack_cap]
+    cmp dword [op_count], ecx
     jne .exe_insert
     push over_flow_error
     call printf
     add esp, 4
     ret
-.exe_insert:
-	mov [esi], eax
-	dec esi
-	inc ecx
-	ret
+    .exe_insert:
+        mov dword [esi], eax
+        dec esi
+        inc dword [op_count]
+        inc ecx
+        ret
 
 
 addition:
-    cmp ecx, 2
+    cmp dword [op_count], 2
     jge .exe_addition
     push arguments_error
     call printf
@@ -167,24 +171,29 @@ addition:
 	mov eax, [esi+1]
 	mov ebx, [esi+2]
 	add esi, 8
+	sub dword [op_count], 2
 	sub ecx, 2
     add eax, ebx
 	call insert
 	jmp iteration
 
 pnp:
-    ; attemp to pop an operand from the stack, if available then print
-    cmp ecx, 1
+    ; attempt to pop an operand from the stack, if available then print
+    cmp dword [op_count], 1
     jge .exe_pnp
     push arguments_error
     call printf
     add esp, 4
     jmp iteration
-.exe_pnp:
-	mov eax, [esi+1]
-	inc esi
-	dec ecx
-	jmp iteration
+    .exe_pnp:
+        mov eax, [esi+1]
+        push eax
+        push num_fmt
+        call printf
+        add esp, 8
+        inc esi
+        dec dword [op_count]
+        jmp iteration
 
 dup:
     ; check if there is an argument to duplicate, if not error, else insert a copy
