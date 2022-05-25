@@ -10,4 +10,4 @@ clean:
 	rm -rf bin/* obj/*
 
 run:
-	./bin/calc A
+	./bin/calc 10
