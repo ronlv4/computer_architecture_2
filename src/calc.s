@@ -15,7 +15,7 @@ section .data
 	arguments_error:    db "Error: Insufficient Number of Arguments on Stack", 10, 0;
 	arg_count_err_msg:  db "Error: invalid number of arguments", 10, 0;
 	invalid_number_msg: db "Error: the number entered is invalid", 10, 0
-	num_fmt: db "%d", 10, 0;
+	num_fmt: db "%X", 10, 0;
 	str_fmt: db "%s", 10, 0;
 	chr_fmt: db "%c", 10, 0;
 
@@ -62,10 +62,9 @@ default_capacity:
     push set_cap_msg
     call printf
     add esp, 8
-    mov esi, esp
+    mov [op_stack_ptr], esp
     sub esp, ebx
     mov dword [op_count], 0
-	xor ecx, ecx            ; ecx - current num of args in stack
 iteration:
 	call prompt
 	call get_input          ; input_buff filled with user input
@@ -145,20 +144,20 @@ prompt:
 
 insert:
     ; input: eax = number to insert
-    mov ecx, [op_stack_cap]
-    cmp dword [op_count], ecx
+    mov edx, [op_stack_cap]
+    cmp dword [op_count], edx
     jne .exe_insert
     push over_flow_error
     call printf
     add esp, 4
     ret
     .exe_insert:
-        mov dword [esi], eax
-        dec esi
+        mov ecx, [op_stack_ptr]
+        mov [ecx], eax
+        sub ecx, 4
+        mov [op_stack_ptr], ecx
         inc dword [op_count]
-        inc ecx
         ret
-
 
 addition:
     cmp dword [op_count], 2
@@ -168,11 +167,12 @@ addition:
     add esp, 4
     jmp iteration
 .exe_addition:
-	mov eax, [esi+1]
-	mov ebx, [esi+2]
-	add esi, 8
+    mov ecx, [op_stack_ptr]
+	mov eax, [ecx+4]
+	mov ebx, [ecx+8]
+	add ecx, 8
+	mov [op_stack_ptr], ecx
 	sub dword [op_count], 2
-	sub ecx, 2
     add eax, ebx
 	call insert
 	jmp iteration
@@ -186,12 +186,16 @@ pnp:
     add esp, 4
     jmp iteration
     .exe_pnp:
-        mov eax, [esi+1]
+        mov ecx, [op_stack_ptr]
+        mov eax, [ecx+4]
+        pushad
         push eax
         push num_fmt
         call printf
         add esp, 8
-        inc esi
+        popad
+        add ecx, 4
+        mov [op_stack_ptr], ecx
         dec dword [op_count]
         jmp iteration
 
