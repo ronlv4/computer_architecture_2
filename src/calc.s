@@ -34,8 +34,7 @@ section .text
 	extern malloc 
 	extern calloc 
 	extern free 
-	extern gets 
-	extern getchar 
+	extern getchar
 	extern fgets 
 	extern stdout
 	extern stdin
