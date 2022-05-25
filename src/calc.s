@@ -186,15 +186,13 @@ pnp:
     call print_arg_err
     jmp iteration
 .exe_pnp:
-    mov eax, [ecx+4]
+    call remove_last_operand
     pushad
     push eax
     push num_fmt
     call printf
     add esp, 8
     popad
-    add ecx, 4
-    dec dword [operands_count]
     jmp iteration
 
 dup:
@@ -232,13 +230,19 @@ bit_or:
     jmp iteration
 
 n:
-    cmp ecx, 1
+    cmp dword [operands_count], 1
     jge .exe_n
     call print_arg_err
     ret
 .exe_n:
-    mov eax, [ecx]
-
+    call remove_last_operand
+    mov edx, eax
+    xor eax, eax
+.digit:
+    inc eax
+    shr edx, 4
+    jnz .digit
+    call insert
     jmp iteration
 
 mult:
@@ -288,6 +292,12 @@ remove_last_two:
     mov ebx, [ecx+8]
     add ecx, 8
     sub dword [operands_count], 2
+    ret
+
+remove_last_operand:
+    mov eax, [ecx+4]
+    add ecx, 4
+    dec dword [operands_count]
     ret
 
 print_operations_count:
